@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>Слот машина</title>
+<style>
+  body { font-family: sans-serif; text-align: center; background: #222; color: #fff; }
+  #slots { display: flex; justify-content: center; margin: 20px; }
+  .slot { width: 80px; height: 80px; margin: 0 5px; font-size: 50px; line-height: 80px; border: 2px solid #fff; border-radius: 10px; background: #333; }
+  #spinBtn { padding: 10px 30px; font-size: 20px; cursor: pointer; margin-top: 20px; }
+  #result { margin-top: 20px; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<h1>Слот машина</h1>
+<div id="slots">
+  <div class="slot">🎁</div>
+  <div class="slot">🎁</div>
+  <div class="slot">🎁</div>
+  <div class="slot">🎁</div>
+  <div class="slot">🎁</div>
+  <div class="slot">🎁</div>
+</div>
+<button id="spinBtn">Крутить 🎰</button>
+<div id="result"></div>
+
+<script>
+  const slots = document.querySelectorAll('.slot');
+  const spinBtn = document.getElementById('spinBtn');
+  const resultDiv = document.getElementById('result');
+
+  const symbols = ['🎁', '💎', '🎉', '🍀', '⭐️', '🍬'];
+
+  function spin() {
+    spinBtn.disabled = true;
+    resultDiv.textContent = 'Крутим...';
+
+    let spinsCount = 20;
+    let interval = 100;
+    let currentSpin = 0;
+
+    let animation = setInterval(() => {
+      slots.forEach(slot => {
+        const sym = symbols[Math.floor(Math.random() * symbols.length)];
+        slot.textContent = sym;
+      });
+
+      currentSpin++;
+      if(currentSpin >= spinsCount) {
+        clearInterval(animation);
+        let arr = Array.from(slots).map(s => s.textContent);
+        let win = checkWin(arr);
+        if(win) {
+          resultDiv.textContent = '🎉 Поздравляем! Вы выиграли!';
+        } else {
+          resultDiv.textContent = 'Попробуйте еще раз!';
+        }
+        // Отправляем результат боту
+        Telegram.WebApp.sendData(JSON.stringify({slots: arr, win: win}));
+        spinBtn.disabled = false;
+      }
+    }, interval);
+  }
+
+  function checkWin(arr) {
+    let count = 1;
+    for(let i = 1; i < arr.length; i++) {
+      if(arr[i] === arr[i-1]) {
+        count++;
+        if(count >= 3) return true;
+      } else {
+        count = 1;
+      }
+    }
+    return false;
+  }
+
+  spinBtn.onclick = spin;
+
+  // Telegram WebApp init
+  window.Telegram?.WebApp?.ready();
+</script>
+
+</body>
+</html>
