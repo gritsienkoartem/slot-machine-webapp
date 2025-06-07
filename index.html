@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
@@ -56,8 +56,12 @@
         } else {
           resultDiv.textContent = 'Попробуйте еще раз!';
         }
-        // Отправляем результат боту
-        Telegram.WebApp.sendData(JSON.stringify({slots: arr, win: win}));
+
+        // Отправляем результат в Telegram WebApp, если он доступен
+        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.sendData) {
+          Telegram.WebApp.sendData(JSON.stringify({slots: arr, win: win}));
+        }
+
         spinBtn.disabled = false;
       }
     }, interval);
@@ -78,8 +82,10 @@
 
   spinBtn.onclick = spin;
 
-  // Telegram WebApp init
-  window.Telegram?.WebApp?.ready();
+  // Инициализация Telegram WebApp, если доступно
+  if(window.Telegram && Telegram.WebApp && Telegram.WebApp.ready) {
+    Telegram.WebApp.ready();
+  }
 </script>
 
 </body>
