@@ -1,92 +1,112 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<title>Слот машина</title>
-<style>
-  body { font-family: sans-serif; text-align: center; background: #222; color: #fff; }
-  #slots { display: flex; justify-content: center; margin: 20px; }
-  .slot { width: 80px; height: 80px; margin: 0 5px; font-size: 50px; line-height: 80px; border: 2px solid #fff; border-radius: 10px; background: #333; }
-  #spinBtn { padding: 10px 30px; font-size: 20px; cursor: pointer; margin-top: 20px; }
-  #result { margin-top: 20px; font-size: 18px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Змейка</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+      font-family: sans-serif;
+      flex-direction: column;
+    }
+
+    canvas {
+      background-color: #000;
+      border: 2px solid #4caf50;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Змейка 🐍</h1>
+  <canvas id="game" width="400" height="400"></canvas>
 
-<h1>Слот машина</h1>
-<div id="slots">
-  <div class="slot">🎁</div>
-  <div class="slot">🎁</div>
-  <div class="slot">🎁</div>
-  <div class="slot">🎁</div>
-  <div class="slot">🎁</div>
-  <div class="slot">🎁</div>
-</div>
-<button id="spinBtn">Крутить 🎰</button>
-<div id="result"></div>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
 
-<script>
-  const slots = document.querySelectorAll('.slot');
-  const spinBtn = document.getElementById('spinBtn');
-  const resultDiv = document.getElementById('result');
+    const gridSize = 20;
+    let snake = [{ x: 200, y: 200 }];
+    let dx = gridSize;
+    let dy = 0;
+    let food = spawnFood();
+    let score = 0;
 
-  const symbols = ['🎁', '💎', '🎉', '🍀', '⭐️', '🍬'];
+    function drawRect(x, y, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, gridSize - 2, gridSize - 2);
+    }
 
-  function spin() {
-    spinBtn.disabled = true;
-    resultDiv.textContent = 'Крутим...';
+    function spawnFood() {
+      return {
+        x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+        y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize
+      };
+    }
 
-    let spinsCount = 20;
-    let interval = 100;
-    let currentSpin = 0;
+    function gameLoop() {
+      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-    let animation = setInterval(() => {
-      slots.forEach(slot => {
-        const sym = symbols[Math.floor(Math.random() * symbols.length)];
-        slot.textContent = sym;
-      });
-
-      currentSpin++;
-      if(currentSpin >= spinsCount) {
-        clearInterval(animation);
-        let arr = Array.from(slots).map(s => s.textContent);
-        let win = checkWin(arr);
-        if(win) {
-          resultDiv.textContent = '🎉 Поздравляем! Вы выиграли!';
-        } else {
-          resultDiv.textContent = 'Попробуйте еще раз!';
-        }
-
-        // Отправляем результат в Telegram WebApp, если он доступен
-        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.sendData) {
-          Telegram.WebApp.sendData(JSON.stringify({slots: arr, win: win}));
-        }
-
-        spinBtn.disabled = false;
+      // Столкновение со стеной
+      if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+        alert("Игра окончена! Счёт: " + score);
+        document.location.reload();
+        return;
       }
-    }, interval);
-  }
 
-  function checkWin(arr) {
-    let count = 1;
-    for(let i = 1; i < arr.length; i++) {
-      if(arr[i] === arr[i-1]) {
-        count++;
-        if(count >= 3) return true;
+      // Столкновение с собой
+      for (let part of snake) {
+        if (part.x === head.x && part.y === head.y) {
+          alert("Ты съел сам себя! Счёт: " + score);
+          document.location.reload();
+          return;
+        }
+      }
+
+      snake.unshift(head);
+
+      // Съел еду
+      if (head.x === food.x && head.y === food.y) {
+        food = spawnFood();
+        score++;
       } else {
-        count = 1;
+        snake.pop();
+      }
+
+      // Очистка экрана
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Рисуем еду
+      drawRect(food.x, food.y, "#e91e63");
+
+      // Рисуем змею
+      for (let i = 0; i < snake.length; i++) {
+        drawRect(snake[i].x, snake[i].y, i === 0 ? "#4caf50" : "#8bc34a");
       }
     }
-    return false;
-  }
 
-  spinBtn.onclick = spin;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" && dy === 0) {
+        dx = 0; dy = -gridSize;
+      } else if (e.key === "ArrowDown" && dy === 0) {
+        dx = 0; dy = gridSize;
+      } else if (e.key === "ArrowLeft" && dx === 0) {
+        dx = -gridSize; dy = 0;
+      } else if (e.key === "ArrowRight" && dx === 0) {
+        dx = gridSize; dy = 0;
+      }
+    });
 
-  // Инициализация Telegram WebApp, если доступно
-  if(window.Telegram && Telegram.WebApp && Telegram.WebApp.ready) {
-    Telegram.WebApp.ready();
-  }
-</script>
-
+    setInterval(gameLoop, 100);
+  </script>
 </body>
 </html>
